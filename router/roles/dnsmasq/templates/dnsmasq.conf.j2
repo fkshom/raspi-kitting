@@ -1,0 +1,9 @@
+#no-resolv
+no-poll
+interface={{ interface_internal }}
+except-interface={{ interface_external }}
+#listen-address=
+#no-dhcp-interface=
+bind-interfaces
+no-hosts
+dhcp-range={{ dnsmasq_dhcp_range }}

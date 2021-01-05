@@ -1,0 +1,38 @@
+- apt:
+    name: dnsmasq
+    update_cache: yes
+
+- template:
+    src: dnsmasq.conf.j2
+    dest: /etc/dnsmasq.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- systemd:
+   name: dnsmasq
+   state: started
+
+- iptables:
+    chain: INPUT
+    in_interface: "{{ interface_internal }}"
+    protocol: udp
+    destination_port: "53"
+    jump: ACCEPT
+  notify: persist iptables
+
+- iptables:
+    chain: INPUT
+    in_interface: "{{ interface_internal }}"
+    protocol: tcp
+    destination_port: "53"
+    jump: ACCEPT
+  notify: persist iptables
+
+- iptables:
+    chain: INPUT
+    in_interface: "{{ interface_internal }}"
+    protocol: udp
+    destination_port: "67"
+    jump: ACCEPT
+  notify: persist iptables

@@ -1,0 +1,167 @@
+- hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+
+      #    - name: unattended-upgradeを一時的に無効化
+      #      debconf:
+      #        name: unattended-upgrades
+      #        question: "unattended-upgrades/enable_auto_updates"
+      #        vtype: boolean
+      #        value: "false"
+      #
+      #    - name: unattended-upgradeを一時的に無効化
+      #      shell: "dpkg-reconfigure -f noninteractive unattended-upgrades"
+      #      ignore_errors: true
+      #
+      #    - with_items:
+      #        #        - apt-daily-upgrade.timer
+      #        #        - apt-daily.timer
+      #        #        - apt-daily-upgrade.service
+      #        #        - apt-daily.service
+      #        - unattended-upgrades
+      #      systemd:
+      #        name: "{{ item }}"
+      #        state: stopped
+      #        masked: no
+      #        enabled: no
+
+
+    - name: デフォルトゲートウェイを仮設定
+      shell: "ip route add default via {{ default_route }}"
+      ignore_errors: true
+
+    - name: ホスト名を設定
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: /etc/hosts に自ホスト名を設定
+      lineinfile:
+        dest: /etc/hosts
+        line: "127.0.0.1 {{ inventory_hostname }}"
+        state: present
+
+    - name: グループを追加
+      group:
+        name: deploy
+
+    - name: ユーザーを追加
+      user:
+        name: deploy
+        group: deploy
+        groups: sudo,plugdev
+        password: "{{ 'deploy' | password_hash('sha512', 'mysecretsalt') }}"
+        shell: /bin/bash
+        create_home : yes
+    #=> sudo sed -i 's/ubuntu$/ubuntu,deploy/g' /etc/group
+
+    - name: aptが失敗する場合の対策(/var/lib/dpkg/lock-frontend)
+      apt:
+        autoremove: yes
+
+    - name: apt dist-upgrade
+      apt:
+        upgrade: dist
+        update_cache: yes
+        autoremove: yes
+      async: 3600
+      poll: 0
+      register: apt_sleeper
+
+    - name: apt dist-upgradeの終了待機
+      async_status:
+        jid: "{{ apt_sleeper.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 3600
+      delay: 1
+
+    - name: 必要であれば再起動する
+      command: 
+        cmd: shutdown -r now 'Rebooting to complete system upgrade'
+        removes: /var/run/reboot-required
+      async: 1
+      poll: 0
+
+    - name: 再接続待機
+      wait_for_connection:
+        connect_timeout: 10
+        sleep: 1
+        delay: 0
+        timeout: 600
+
+    - name: デフォルトゲートウェイを仮設定
+      shell: "ip route add default via {{ default_route }}"
+      ignore_errors: true
+
+    - name: aptが失敗する場合の対策(/var/lib/dpkg/lock-frontend)
+      apt:
+        autoremove: yes
+
+    # debian — debconf-set-selectionsの変数名を見つける方法は？
+    # https://www.it-swarm-ja.tech/ja/debian/debconfsetselections%E3%81%AE%E5%A4%89%E6%95%B0%E5%90%8D%E3%82%92%E8%A6%8B%E3%81%A4%E3%81%91%E3%82%8B%E6%96%B9%E6%B3%95%E3%81%AF%EF%BC%9F/962733568/
+    # debconf-show --listowners | grep lightdm | xargs debconf-show
+    - debconf:
+        name: lightdm
+        question: "shared/default-x-display-manager"
+        vtype: select
+        value: lightdm
+
+    - name: xubuntu-desktopのインストール
+      apt:
+        name: xubuntu-desktop
+        update_cache: yes
+        autoremove: yes
+      async: 3600
+      poll: 0
+      register: apt_sleeper
+
+    - name: apt install xubuntu-desktopの終了待機
+      async_status:
+        jid: "{{ apt_sleeper.ansible_job_id }}"
+      register: job_result
+      until: job_result.finished
+      retries: 3600
+      delay: 1
+
+    - name: その他パッケージのインストール
+      apt:
+        name:
+          - adb
+          - scrcpy
+        update_cache: yes
+        autoremove: yes
+
+    - name: 必要であれば再起動する
+      command: 
+        cmd: shutdown -r now 'Rebooting to complete system upgrade'
+        removes: /var/run/reboot-required
+      async: 1
+      poll: 0
+
+    - name: 再接続待機
+      wait_for_connection:
+        connect_timeout: 10
+        sleep: 1
+        delay: 0
+        timeout: 600
+
+    - name: デフォルトゲートウェイを仮設定
+      shell: "ip route add default via {{ default_route }}"
+      ignore_errors: true
+
+      #    - name: unattended-upgradeを有効化
+      #      debconf:
+      #        name: unattended-upgrades
+      #        question: "unattended-upgrades/enable_auto_updates"
+      #        vtype: boolean
+      #        value: "true"
+      #
+      #    - name: unattended-upgradeを有効化
+      #      shell: "dpkg-reconfigure -f noninteractive unattended-upgrades"
+      #      ignore_errors: true
+      #
+      #    - systemd:
+      #        name: unattended-upgrades
+      #        state: started
+      #        enabled: yes

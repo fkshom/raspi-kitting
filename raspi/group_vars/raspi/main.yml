@@ -1,0 +1,11 @@
+---
+#ansible_connection: ssh
+#ansible_ssh_user: user
+#ansible_ssh_pass: useruser
+# ansible_sudo_user: user
+#ansible_sudo_pass: useruser
+# ansible_become: true
+default_route: 192.168.3.1
+ansible_ssh_user: user
+ansible_ssh_pass: ubuntu
+ansible_sudo_pass: ubuntu

@@ -1,0 +1,47 @@
+- apt:
+    name: squid
+    update_cache: yes
+
+- template:
+    src: squid.conf.j2
+    dest: /etc/squid/squid.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart squid
+
+- file:
+    path: /var/spool/squid
+    state: directory
+    owner: proxy
+    group: proxy
+    mode: 0755
+
+- apt:
+    name: iptables-persistent
+    update_cache: yes
+    autoremove: yes
+
+- iptables:
+    table: nat
+    chain: PREROUTING
+    in_interface: "{{ interface_internal }}"
+    protocol: tcp
+    destination_port: "80"
+    jump: REDIRECT
+    to_ports: "3128"
+  notify: persist iptables
+
+- iptables:
+    chain: INPUT
+    in_interface: "{{ interface_internal }}"
+    protocol: tcp
+    destination_port: "3128"
+    jump: ACCEPT
+  notify: persist iptables
+
+- systemd:
+    name: squid
+    state: started
+    enabled: yes
+    daemon-reload: yes
