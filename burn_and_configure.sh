@@ -70,31 +70,37 @@ for OPT in "$@"; do
 done
 
 IPADDR="${_IPADDR}"
-IMGFILE="${IMGFILE}"
+IMGFILE="${_IMGFILE}"
 OUTDEVICE="${_OUTDEVICE}"
 MOUNTPOINT=/mnt
-
-labal=`blkid -s LABEL -o value ${OUTDEVICE}1`
-if [ ! "${label}" == "system-boot"]; then
-    echo "ERROR: label ${label} is not 'system-boot'."
-    echo "       ${OUTDEVICE}1 may not be cloud-init pertition of preinstalled raspi image."
-    exit 1
-fi
 
 if [ ! -b ${OUTDEVICE} ]; then
     echo "ERROR: ${OUTDEVICE} is not missing or is not block device file"
     exit 1
 fi
 
-set -exu
+set -xu
 
 # umount /dev/sdc /dev/sdc1 /dev/sdc2 ...
 sudo umount ${OUTDEVICE}* || true
-if [ $_DO_BURN -eq 1 ]; do
+if [ $_DO_BURN -eq 1 ]; then
+  if [ ! -f "${IMGFILE}" ]; then
+    echo "ERROR: ${IMGFILE} does not exists."
+    exit 1
+  fi
   xzcat ${IMGFILE} | sudo dd of=${OUTDEVICE} bs=1MB status=progress
+  sudo partprobe ${OUTDEVICE}
+  sleep 1
 fi
 
-if [ $_DO_CONFIGURE -eq 1 ]; do
+if [ $_DO_CONFIGURE -eq 1 ]; then
+  label=`lsblk -no label ${OUTDEVICE}1`
+  if [ ! "${label}" == "system-boot" ]; then
+      echo "ERROR: label ${label} is not 'system-boot'."
+      echo "       ${OUTDEVICE}1 may not be cloud-init pertition of preinstalled raspi image."
+      exit 1
+  fi
+
   sudo mount ${OUTDEVICE}1 ${MOUNTPOINT}
   cat network-config | sed -e "s%IPADDR%${IPADDR}%g" | sudo tee ${MOUNTPOINT}/network-config > /dev/null
   sudo cp -f user-data ${MOUNTPOINT}/user-data
