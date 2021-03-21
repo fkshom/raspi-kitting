@@ -19,7 +19,7 @@ chpasswd:
 
 system_info:
   default_user:
-    name: deploy
+    name: user
 
 # Enable password authentication with the SSH daemon
 ssh_pwauth: true
