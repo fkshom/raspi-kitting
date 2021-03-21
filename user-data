@@ -19,7 +19,7 @@ chpasswd:
 
 system_info:
   default_user:
-    name: user
+    name: deploy
 
 # Enable password authentication with the SSH daemon
 ssh_pwauth: true
@@ -107,7 +107,7 @@ write_files:
 - path: /etc/cloud/cloud-init.disabled
 
 runcmd:
-- [ kpkg-reconfigure, -f, noninteractive, keyboard-configuration ]
+- [ dpkg-reconfigure, -f, noninteractive, keyboard-configuration ]
 - [ netplan, apply ]
 
 power_state:

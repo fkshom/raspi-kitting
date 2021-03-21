@@ -26,19 +26,25 @@
       #        masked: no
       #        enabled: no
 
+    - name: デフォルトゲートウェイが設定されているかを確認
+      shell: "ip route | grep default"
+      register: default_route
+      failed_when: false
+      changed_when: false
 
     - name: デフォルトゲートウェイを仮設定
       shell: "ip route add default via {{ default_route }}"
       ignore_errors: true
+      when: default_route.rc != 0
 
     - name: ホスト名を設定
       hostname:
-        name: "{{ inventory_hostname }}"
+        name: "{{ hostname }}"
 
     - name: /etc/hosts に自ホスト名を設定
       lineinfile:
         dest: /etc/hosts
-        line: "127.0.0.1 {{ inventory_hostname }}"
+        line: "127.0.0.1 {{ hostname }}"
         state: present
 
     - name: グループを追加
@@ -90,9 +96,16 @@
         delay: 0
         timeout: 600
 
+    - name: デフォルトゲートウェイが設定されているかを確認
+      shell: "ip route | grep default"
+      register: default_route
+      failed_when: false
+      changed_when: false
+
     - name: デフォルトゲートウェイを仮設定
       shell: "ip route add default via {{ default_route }}"
       ignore_errors: true
+      when: default_route.rc != 0
 
     - name: aptが失敗する場合の対策(/var/lib/dpkg/lock-frontend)
       apt:
@@ -146,9 +159,16 @@
         delay: 0
         timeout: 600
 
+    - name: デフォルトゲートウェイが設定されているかを確認
+      shell: "ip route | grep default"
+      register: default_route
+      failed_when: false
+      changed_when: false
+
     - name: デフォルトゲートウェイを仮設定
       shell: "ip route add default via {{ default_route }}"
       ignore_errors: true
+      when: default_route.rc != 0
 
       #    - name: unattended-upgradeを有効化
       #      debconf:

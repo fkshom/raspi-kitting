@@ -26,8 +26,8 @@ usage() {
     exit 1
 }
 
-for OPT in "$@"; do
-    case $OPT in
+while (( $# > 0 )); do
+    case $1 in
         -h | --help) usage; exit 1;;
         --version)   echo $VERSION; exit 1;;
         -c | --no-burn)
