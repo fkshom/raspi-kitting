@@ -28,14 +28,14 @@
 
     - name: デフォルトゲートウェイが設定されているかを確認
       shell: "ip route | grep default"
-      register: default_route
+      register: result_default_route
       failed_when: false
       changed_when: false
 
     - name: デフォルトゲートウェイを仮設定
       shell: "ip route add default via {{ default_route }}"
       ignore_errors: true
-      when: default_route.rc != 0
+      when: result_default_route.rc != 0
 
     - name: ホスト名を設定
       hostname:
@@ -98,14 +98,14 @@
 
     - name: デフォルトゲートウェイが設定されているかを確認
       shell: "ip route | grep default"
-      register: default_route
+      register: result_default_route
       failed_when: false
       changed_when: false
 
     - name: デフォルトゲートウェイを仮設定
       shell: "ip route add default via {{ default_route }}"
       ignore_errors: true
-      when: default_route.rc != 0
+      when: result_default_route.rc != 0
 
     - name: aptが失敗する場合の対策(/var/lib/dpkg/lock-frontend)
       apt:
@@ -161,14 +161,14 @@
 
     - name: デフォルトゲートウェイが設定されているかを確認
       shell: "ip route | grep default"
-      register: default_route
+      register: result_default_route
       failed_when: false
       changed_when: false
 
     - name: デフォルトゲートウェイを仮設定
       shell: "ip route add default via {{ default_route }}"
       ignore_errors: true
-      when: default_route.rc != 0
+      when: result_default_route.rc != 0
 
       #    - name: unattended-upgradeを有効化
       #      debconf:
