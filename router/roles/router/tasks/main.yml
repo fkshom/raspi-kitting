@@ -1,23 +1,27 @@
-- sysctl:
+- name: net.ipv4.ip_forward = 1
+  sysctl:
     name: net.ipv4.ip_forward
     value: "1"
     sysctl_set: yes
     state: present
     reload: yes
 
-- apt:
+- name: install iptables-persistent
+  apt:
     name: iptables-persistent
     update_cache: yes
     autoremove: yes
 
-- iptables:
+- name: iptables MASQUERADE
+  iptables:
     table: nat
     chain: POSTROUTING
     out_interface: "{{ interface_external }}"
     jump: MASQUERADE
   notify: persist iptables
 
-- iptables:
+- name: iptables FORWARD
+  iptables:
     chain: FORWARD
     in_interface: "{{interface_external}}"
     out_interface: "{{interface_internal}}"
@@ -25,7 +29,8 @@
     jump: ACCEPT
   notify: persist iptables
 
-- iptables:
+- name: iptables FORWARD
+  iptables:
     chain: FORWARD
     in_interface: "{{interface_internal}}"
     out_interface: "{{interface_external}}"

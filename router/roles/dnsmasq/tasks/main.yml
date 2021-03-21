@@ -1,19 +1,23 @@
-- apt:
+- name: apt install dnsmasq
+  apt:
     name: dnsmasq
     update_cache: yes
 
-- template:
+- name: save /etc/dnsmasq.conf
+  template:
     src: dnsmasq.conf.j2
     dest: /etc/dnsmasq.conf
     owner: root
     group: root
     mode: 0644
 
-- systemd:
+- name: systemctl start dnsmasq
+  systemd:
    name: dnsmasq
    state: started
 
-- iptables:
+- name: iptables -A INPUT dns udp
+  iptables:
     chain: INPUT
     in_interface: "{{ interface_internal }}"
     protocol: udp
@@ -21,7 +25,8 @@
     jump: ACCEPT
   notify: persist iptables
 
-- iptables:
+- name: iptables -A INPUT dns tcp
+  iptables:
     chain: INPUT
     in_interface: "{{ interface_internal }}"
     protocol: tcp
@@ -29,7 +34,8 @@
     jump: ACCEPT
   notify: persist iptables
 
-- iptables:
+- name: iptables -A INPUT dhcp
+  iptables:
     chain: INPUT
     in_interface: "{{ interface_internal }}"
     protocol: udp

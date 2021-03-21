@@ -1,8 +1,10 @@
-- apt:
+- name: apt install squid
+  apt:
     name: squid
     update_cache: yes
 
-- template:
+- name: save /etc/squid/squid.conf
+  template:
     src: squid.conf.j2
     dest: /etc/squid/squid.conf
     owner: root
@@ -10,19 +12,22 @@
     mode: 0644
   notify: restart squid
 
-- file:
+- name: mkdir /var/spool/squid
+  file:
     path: /var/spool/squid
     state: directory
     owner: proxy
     group: proxy
     mode: 0755
 
-- apt:
+- name: apt install iptables-persistent
+  apt:
     name: iptables-persistent
     update_cache: yes
     autoremove: yes
 
-- iptables:
+- name: iptables -t nat -A PREROUTING REDIRECT
+  iptables:
     table: nat
     chain: PREROUTING
     in_interface: "{{ interface_internal }}"
@@ -32,7 +37,8 @@
     to_ports: "3128"
   notify: persist iptables
 
-- iptables:
+- name: iptables -A INPUT 3128
+  iptables:
     chain: INPUT
     in_interface: "{{ interface_internal }}"
     protocol: tcp
@@ -40,7 +46,8 @@
     jump: ACCEPT
   notify: persist iptables
 
-- systemd:
+- name: systemctl restart squid
+  systemd:
     name: squid
     state: started
     enabled: yes

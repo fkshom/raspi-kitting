@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 PROGNAME=$(basename $0)
 VERSION="1.0"
 
@@ -106,6 +105,5 @@ if [ $_DO_CONFIGURE -eq 1 ]; then
   sudo cp -f user-data ${MOUNTPOINT}/user-data
   sudo umount ${MOUNTPOINT}
 fi
-
 
 echo "Burn and configure successed!"
