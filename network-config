@@ -27,12 +27,4 @@ ethernets:
 #    access-points:
 #      myhomewifi:
 #        password: "S3kr1t"
-#      myworkwifi:
-#        password: "correct battery horse staple"
-#      workssid:
-#        auth:
-#          key-management: eap
-#          method: peap
-#          identity: "me@example.com"
-#          password: "passw0rd"
-#          ca-certificate: /etc/my_ca.pem
+

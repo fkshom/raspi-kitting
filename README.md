@@ -101,7 +101,7 @@ $ dmesg | grep sd  #=> sdb, sdcなど
 初期設定用ファイルを編集します。編集方法は別項記載。
 ```
 $ vim network-config
-$ vim user-config
+$ vim user-data
 ```
 microSDカードに、OSイメージと初期設定を書き込みます。
 ```
@@ -114,12 +114,12 @@ $ sudo ./burn_and_configure.sh --img ubuntu-20.04.1-preinstalled-server-arm64+ra
 `Burn and configure successed!`が表示されれば正常です。書き込みが完了したら自動でアンマウントされます。
 そのままmicroSDカードを抜去し、rasberry piに挿入し、raspberry piの電源をONにします。
 
-cloud-initの設定で2回ほど自動再起動します。キーボード設定のためにinitrd再作成が必要なため、5～10分ほどかかります。
+cloud-initの設定で2回ほど自動再起動します。キーボード設定変更を行っている場合は、initrd再作成が必要なため、5～10分ほどかかります。
 状況把握のため、ディスプレイだけは接続しておくことを推奨します。ログインプロンプトが表示されていても、バックグラウンドで設定が行われていますので、SDカードアクセスランプの点滅状態で状況判断をします。
 
 次に、raspiへの接続性確認をします。
 
-raspiの有線LAN（固定IP）へ接続するのであればそのIPアドレスにSSHできることを確認します。
+raspiの有線LAN（固定IP）へ接続するのであれば、raspiと作業用端末をLAN接続し、raspiのIPアドレスにSSHできることを確認します。
 
 ```
 ssh user@192.168.3.10
@@ -169,4 +169,82 @@ $ vim group_vars/raspi/main.yml
 $ ssh -l user 192.168.3.10 tail -F /var/log/apt/term.log
 
 # -F: ファイルのinodeが変更されたら再読み込みする
+```
+
+## network-config について
+
+network-configの内容について解説します。基本的には/etc/netplan/*.ymlファイルに反映する内容を記載します。
+
+```
+version: 2
+ethernets:
+  eth0:
+    dhcp4: false
+    addresses: [IPADDR]   # IPADDRの部分が、burn_and_configure.shの--ipオプションの内容によって上書きされます
+    nameservers:
+      addresses: [1.1.1.1]
+    routes:
+    - to: 192.168.1.0/24
+      via: 192.168.3.1
+    optional: true
+  usb0:
+    dhcp4: true
+#wifis:                  # raspiのキッティング時にWifiを利用する場合はコメントアウトして使います
+#  wlan0:
+#    dhcp4: true
+#    optional: true
+#    access-points:
+#      myhomewifi:
+#        password: "S3kr1t"
+```
+
+## user-data について
+
+user-dataの内容について解説します。
+
+```
+# 初期アカウントの初期パスワード設定を行います
+chpasswd:
+  expire: false
+  list:
+  - user:ubuntu   # アカウントuserのパスワードをubuntuに設定します
+
+system_info:
+  default_user:
+    name: user    # 初期ユーザーをuserとして作成します。
+
+write_files:      # 初期設定として必要なファイルを作成します
+- path: /etc/default/keyboard  # キーボード設定を日本語にします。不要な場合は削除・コメントアウトしてください
+  content: |
+    # KEYBOARD configuration file
+    # Consult the keyboard(5) manual page.
+    XKBMODEL="pc105"
+    XKBLAYOUT="jp"
+    XKBVARIANT=""
+    XKBOPTIONS=""
+  permission: "0644"
+  owner: root:root
+
+# playbookでapt installする際に失敗するのを防ぐため
+# aptが自動実行されないようにしています
+# 自動適用するには、playbook適用後にoverride.confファイルを削除するか、別のplaybookで再設定する必要があります
+- path: /etc/systemd/system/apt-daily.timer.d/override.conf   
+  content: |
+    [Timer]
+    Persistent=false
+- path: /etc/systemd/system/apt-daily-upgrade.timer.d/override.conf
+  content: |
+    [Timer]
+    Persistent=false
+- path: /etc/apt/apt.conf.d/99disable-periodic
+  content: |
+    APT::Periodic::Enable "0";
+- path: /etc/cloud/cloud-init.disabled
+
+runcmd:  # キーボード設定とネットワーク設定を反映させています。
+- [ dpkg-reconfigure, -f, noninteractive, keyboard-configuration ]
+- [ netplan, apply ]
+
+power_state:
+  mode: reboot
 ```
